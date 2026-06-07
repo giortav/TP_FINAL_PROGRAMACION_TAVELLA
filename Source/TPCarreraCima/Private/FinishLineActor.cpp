@@ -45,18 +45,21 @@ void AFinishLineActor::OnOverlapBegin(UPrimitiveComponent* OverlappedComp,
     ATopRacePlayerState* PS = RacingChar->GetPlayerState<ATopRacePlayerState>();
     if (!PS || PS->IsFinished()) return;
 
-    // Notificamos al GameMode que este jugador termino
     ATopRaceGameMode* GM = GetWorld()->GetAuthGameMode<ATopRaceGameMode>();
     if (GM)
     {
         GM->OnPlayerFinished(PS);
     }
 
-    // Notificamos al cliente especifico via Client RPC en su PlayerController
+    // Congelamos el input del jugador que llego
+    if (ATopRacePlayerController* PC = Cast<ATopRacePlayerController>(RacingChar->GetController()))
+    {
+        PC->SetIgnoreMoveInput(true);
+        PC->SetIgnoreLookInput(true);
+    }
+
     if (ATopRacePlayerController* PC = Cast<ATopRacePlayerController>(RacingChar->GetController()))
     {
         PC->ClientShowNotification(TEXT("Llegaste a la meta!"));
     }
-
-    UE_LOG(LogTemp, Log, TEXT("FinishLine: %s llego a la meta!"), *OtherActor->GetName());
 }
