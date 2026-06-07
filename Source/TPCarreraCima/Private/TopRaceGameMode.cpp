@@ -1,4 +1,6 @@
 #include "Public/TopRaceGameMode.h"
+
+#include "CheckpointActor.h"
 #include "EngineUtils.h"
 #include "GameFramework/PlayerStart.h"
 #include "TimerManager.h"
@@ -7,6 +9,7 @@
 #include "TopRacePlayerState.h"
 #include "Public/TopRacePlayerController.h"
 
+class ACheckpointActor;
 class ATopRaceCharacter;
 
 ATopRaceGameMode::ATopRaceGameMode()
@@ -166,25 +169,45 @@ void ATopRaceGameMode::RespawnPlayer(APlayerController* PlayerController)
 {
     if (!PlayerController) return;
 
-    ATopRacePlayerState* PS = PlayerController->GetPlayerState<ATopRacePlayerState>();
+    ATopRacePlayerState* PS =
+        PlayerController->GetPlayerState<ATopRacePlayerState>();
     if (!PS) return;
 
     FVector SpawnLocation = FVector::ZeroVector;
     FRotator SpawnRotation = FRotator::ZeroRotator;
+    bool bFoundSpawn = false;
 
-    FString CheckpointTag = FString::Printf(TEXT("Checkpoint_%d"), PS->GetCurrentCheckpoint());
-    for (TActorIterator<APlayerStart> It(GetWorld()); It; ++It)
+    // Si tiene al menos un checkpoint, spawneamos ahí
+    if (PS->GetCurrentCheckpoint() > 0)
     {
-        if (It->PlayerStartTag.ToString() == CheckpointTag)
+        // Buscamos el CheckpointActor con ese índice
+        for (TActorIterator<ACheckpointActor> It(GetWorld()); It; ++It)
+        {
+            if (It->CheckpointIndex == PS->GetCurrentCheckpoint())
+            {
+                SpawnLocation = It->GetActorLocation() + It->RespawnOffset;
+                SpawnRotation = It->GetActorRotation();
+                bFoundSpawn = true;
+                break;
+            }
+        }
+    }
+
+    // Si no tiene checkpoint, usamos el PlayerStart
+    if (!bFoundSpawn)
+    {
+        for (TActorIterator<APlayerStart> It(GetWorld()); It; ++It)
         {
             SpawnLocation = It->GetActorLocation();
             SpawnRotation = It->GetActorRotation();
+            bFoundSpawn = true;
             break;
         }
     }
 
     FActorSpawnParameters SpawnParams;
-    SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
+    SpawnParams.SpawnCollisionHandlingOverride =
+        ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
 
     ATopRaceCharacter* NewChar = GetWorld()->SpawnActor<ATopRaceCharacter>(
         CharacterClass, SpawnLocation, SpawnRotation, SpawnParams);
@@ -193,5 +216,6 @@ void ATopRaceGameMode::RespawnPlayer(APlayerController* PlayerController)
     {
         PlayerController->Possess(NewChar);
         NewChar->MulticastPlayRespawnFX();
+        PS->SetRaceStatus(EPlayerRaceStatus::Racing);
     }
 }
