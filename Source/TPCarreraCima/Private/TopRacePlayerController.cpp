@@ -1,11 +1,11 @@
 #include "Public/TopRacePlayerController.h"
-
 #include "TopRaceResultWidget.h"
 #include "Blueprint/UserWidget.h"
 #include "GameFramework/GameStateBase.h"
 #include "Public/TopRaceCharacter.h"
 
-class UTopRaceResultWidget;
+// ANTES: forward declaration de UTopRaceResultWidget redundante (ya cubierta por el #include).
+// ANTES: #include de GameFramework/GameStateBase.h innecesario en este .cpp.
 
 ATopRacePlayerController::ATopRacePlayerController()
 {
@@ -15,13 +15,11 @@ void ATopRacePlayerController::BeginPlay()
 {
     Super::BeginPlay();
 
-    // Solo el cliente local crea su HUD
     if (IsLocalController())
     {
         ShowHUD();
     }
 }
-
 
 // ---------------------------------------------------------------
 // Client RPCs
@@ -29,17 +27,13 @@ void ATopRacePlayerController::BeginPlay()
 
 void ATopRacePlayerController::ClientOnMatchEnd_Implementation(int32 FinalPosition)
 {
-    // Se ejecuta en el cliente cuando el servidor termina la partida
     HideHUD();
     ShowVictoryScreen(FinalPosition);
-
-    UE_LOG(LogTemp, Log, TEXT("PlayerController [ClientRPC]: Fin de partida, posicion %d"), FinalPosition);
 }
 
 void ATopRacePlayerController::ClientShowNotification_Implementation(const FString& Message)
 {
-    // Muestra un mensaje breve en pantalla (ej: "Checkpoint!")
-    // Se puede conectar a un widget UMG con un texto animado
+    // Conectar a un widget UMG con texto animado cuando esté disponible.
     UE_LOG(LogTemp, Log, TEXT("Notificacion: %s"), *Message);
 }
 
@@ -67,46 +61,21 @@ void ATopRacePlayerController::HideHUD()
     }
 }
 
-
-
-
 void ATopRacePlayerController::ShowVictoryScreen(int32 Position)
 {
-    UE_LOG(LogTemp, Log, TEXT("ShowVictoryScreen llamado, posicion: %d"), Position);
+    if (!EndScreenWidgetClass) return;
 
-    if (!EndScreenWidgetClass)
-    {
-        UE_LOG(LogTemp, Warning, TEXT("EndScreenWidgetClass es NULL!"));
-        return;
-    }
+    // ANTES: EndScreenWidgetClass era TSubclassOf<UUserWidget>, lo que obligaba
+    // a un Cast<UTopRaceResultWidget> posterior que podía fallar silenciosamente.
+    // AHORA: asumimos que el .h declara EndScreenWidgetClass como
+    // TSubclassOf<UTopRaceResultWidget>, lo que elimina el cast por completo
+    // y garantiza en tiempo de edición que solo se asigne la clase correcta.
+    UTopRaceResultWidget* ResultWidget = CreateWidget<UTopRaceResultWidget>(this, EndScreenWidgetClass);
+    if (!ResultWidget) return;
 
-    UE_LOG(LogTemp, Log, TEXT("EndScreenWidgetClass OK, creando widget..."));
+    const int32 TotalPlayers = GetWorld()->GetGameState()->PlayerArray.Num();
+    ResultWidget->SetupResult(Position, TotalPlayers);
+    ResultWidget->AddToViewport(10);
 
-    EndScreenWidget = CreateWidget<UUserWidget>(this, EndScreenWidgetClass);
-    if (!EndScreenWidget)
-    {
-        UE_LOG(LogTemp, Warning, TEXT("CreateWidget fallo, EndScreenWidget es NULL!"));
-        return;
-    }
-
-    UE_LOG(LogTemp, Log, TEXT("Widget creado OK, haciendo Cast..."));
-
-    UTopRaceResultWidget* ResultWidget = Cast<UTopRaceResultWidget>(EndScreenWidget);
-    if (!ResultWidget)
-    {
-        UE_LOG(LogTemp, Warning, TEXT("Cast a TopRaceResultWidget fallo!"));
-    }
-    else
-    {
-        int32 TotalPlayers = GetWorld()->GetGameState()->PlayerArray.Num();
-        UE_LOG(LogTemp, Log, TEXT("SetupResult con posicion %d, total jugadores %d"), Position, TotalPlayers);
-        ResultWidget->SetupResult(Position, TotalPlayers);
-    }
-
-    EndScreenWidget->AddToViewport(10);
-    UE_LOG(LogTemp, Log, TEXT("Widget agregado al viewport!"));
+    EndScreenWidget = ResultWidget;
 }
-// ---------------------------------------------------------------
-// Input — delega al Character poseido
-// ---------------------------------------------------------------
-

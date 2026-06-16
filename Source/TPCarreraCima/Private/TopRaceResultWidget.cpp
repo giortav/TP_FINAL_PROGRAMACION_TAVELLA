@@ -1,43 +1,20 @@
 #include "TopRaceResultWidget.h"
 #include "Components/Image.h"
- 
+
 void UTopRaceResultWidget::NativeConstruct()
 {
-	Super::NativeConstruct();
- 
-	// Ocultamos ambas imagenes al inicio
+    Super::NativeConstruct();
 }
- 
+
 void UTopRaceResultWidget::SetupResult(int32 FinalPosition, int32 TotalPlayers)
 {
-	UE_LOG(LogTemp, Log, TEXT("SetupResult llamado, posicion: %d"), FinalPosition);
-	UE_LOG(LogTemp, Log, TEXT("ImageVictory es valido: %s"), ImageVictory ? TEXT("SI") : TEXT("NO"));
-	UE_LOG(LogTemp, Log, TEXT("ImageDefeat es valido: %s"),  ImageDefeat  ? TEXT("SI") : TEXT("NO"));
+    // ANTES: en cada rama del if/else se tocaban ambas imágenes por separado,
+    // duplicando la misma lógica espejada. 
+    // AHORA: se calcula la visibilidad de victoria una vez y se deriva la derrota.
+    const bool bWon = (FinalPosition == 1);
+    const ESlateVisibility WinVisibility  = bWon ? ESlateVisibility::Visible : ESlateVisibility::Hidden;
+    const ESlateVisibility LoseVisibility = bWon ? ESlateVisibility::Hidden  : ESlateVisibility::Visible;
 
-	if (FinalPosition == 1)
-	{
-		if (ImageVictory)
-		{
-			ImageVictory->SetVisibility(ESlateVisibility::Visible);
-			UE_LOG(LogTemp, Log, TEXT("ImageVictory -> Visible"));
-		}
-		if (ImageDefeat)
-		{
-			ImageDefeat->SetVisibility(ESlateVisibility::Hidden);
-			UE_LOG(LogTemp, Log, TEXT("ImageDefeat -> Hidden"));
-		}
-	}
-	else
-	{
-		if (ImageVictory)
-		{
-			ImageVictory->SetVisibility(ESlateVisibility::Hidden);
-			UE_LOG(LogTemp, Log, TEXT("ImageVictory -> Hidden"));
-		}
-		if (ImageDefeat)
-		{
-			ImageDefeat->SetVisibility(ESlateVisibility::Visible);
-			UE_LOG(LogTemp, Log, TEXT("ImageDefeat -> Visible"));
-		}
-	}
+    if (ImageVictory) { ImageVictory->SetVisibility(WinVisibility);  }
+    if (ImageDefeat)  { ImageDefeat->SetVisibility(LoseVisibility);  }
 }

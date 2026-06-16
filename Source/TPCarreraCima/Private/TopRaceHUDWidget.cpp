@@ -35,46 +35,41 @@ void UTopRaceHUDWidget::CacheReferences()
 
 void UTopRaceHUDWidget::RefreshHUD()
 {
-    // Si no tenemos referencias las buscamos de nuevo
     if (!CachedPlayerState || !CachedGameState)
     {
         CacheReferences();
         return;
     }
 
-    // --- Posicion ---
     if (TextPosition)
     {
         TextPosition->SetText(FormatPosition(CachedPlayerState->GetRacePosition()));
     }
 
-    // --- Checkpoint ---
     if (TextCheckpoint)
     {
         FText CheckpointText = FText::FromString(
-            FString::Printf(TEXT(" %d / %d"),
+            FString::Printf(TEXT("%d / %d"),
                 CachedPlayerState->GetCurrentCheckpoint(),
                 CachedGameState->GetTotalCheckpoints()));
 
         TextCheckpoint->SetText(CheckpointText);
     }
 
-    // --- Tiempo ---
     if (TextTime)
     {
         TextTime->SetText(FormatTime(CachedGameState->GetTimeRemaining()));
     }
 
-    // --- Estado del jugador ---
     if (TextStatus)
     {
         FString StatusStr;
         switch (CachedPlayerState->GetRaceStatus())
         {
-            case EPlayerRaceStatus::Racing:      StatusStr = TEXT("Corriendo");     break;
-            case EPlayerRaceStatus::Respawning:  StatusStr = TEXT("Respawneando");  break;
-            case EPlayerRaceStatus::Finished:    StatusStr = TEXT("Finalizado!");   break;
-            case EPlayerRaceStatus::Spectating:  StatusStr = TEXT("Espectador");    break;
+            case EPlayerRaceStatus::Racing:     StatusStr = TEXT("Corriendo");    break;
+            case EPlayerRaceStatus::Respawning: StatusStr = TEXT("Respawneando"); break;
+            case EPlayerRaceStatus::Finished:   StatusStr = TEXT("Finalizado!");  break;
+            case EPlayerRaceStatus::Spectating: StatusStr = TEXT("Espectador");   break;
         }
         TextStatus->SetText(FText::FromString(StatusStr));
     }
@@ -93,14 +88,8 @@ FText UTopRaceHUDWidget::FormatTime(float Seconds) const
 
 FText UTopRaceHUDWidget::FormatPosition(int32 Position) const
 {
-    FString Suffix;
-    switch (Position)
-    {
-        case 1:  Suffix = TEXT("1°"); break;
-        case 2:  Suffix = TEXT("2°"); break;
-        case 3:  Suffix = TEXT("3°"); break;
-        case 4:  Suffix = TEXT("4°"); break;
-        default: Suffix = FString::Printf(TEXT("%d°"), Position); break;
-    }
-    return FText::FromString(Suffix);
+    // ANTES: cases 1-4 hardcodeados que producían exactamente el mismo
+    // resultado que el default ("%d°"), código muerto sin valor.
+    // AHORA: un único path para todos los valores.
+    return FText::FromString(FString::Printf(TEXT("%d°"), Position));
 }

@@ -5,10 +5,6 @@
 #include "Public/TopRacePlayerController.h"
 #include "Public/TopRacePlayerState.h"
 
-class ATopRacePlayerController;
-class ATopRaceGameMode;
-class ATopRacePlayerState;
-
 AFinishLineActor::AFinishLineActor()
 {
     PrimaryActorTick.bCanEverTick = false;
@@ -45,21 +41,17 @@ void AFinishLineActor::OnOverlapBegin(UPrimitiveComponent* OverlappedComp,
     ATopRacePlayerState* PS = RacingChar->GetPlayerState<ATopRacePlayerState>();
     if (!PS || PS->IsFinished()) return;
 
-    ATopRaceGameMode* GM = GetWorld()->GetAuthGameMode<ATopRaceGameMode>();
-    if (GM)
+    if (ATopRaceGameMode* GM = GetWorld()->GetAuthGameMode<ATopRaceGameMode>())
     {
         GM->OnPlayerFinished(PS);
     }
 
-    // Congelamos el input del jugador que llego
+    // ANTES: se casteaba dos veces a ATopRacePlayerController en bloques separados.
+    // AHORA: un único cast reutilizado para ambas operaciones.
     if (ATopRacePlayerController* PC = Cast<ATopRacePlayerController>(RacingChar->GetController()))
     {
         PC->SetIgnoreMoveInput(true);
         PC->SetIgnoreLookInput(true);
-    }
-
-    if (ATopRacePlayerController* PC = Cast<ATopRacePlayerController>(RacingChar->GetController()))
-    {
         PC->ClientShowNotification(TEXT("Llegaste a la meta!"));
     }
 }

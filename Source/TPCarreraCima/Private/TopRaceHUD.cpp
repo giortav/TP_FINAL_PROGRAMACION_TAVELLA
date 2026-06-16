@@ -3,8 +3,8 @@
 #include "Public/TopRaceGameState.h"
 #include "Public/TopRacePlayerState.h"
 
-class ATopRaceGameState;
-class ATopRacePlayerState;
+// ANTES: forward declarations de ATopRaceGameState y ATopRacePlayerState
+// redundantes porque ya están cubiertas por los #include de arriba.
 
 ATopRaceHUD::ATopRaceHUD()
 {
@@ -37,8 +37,8 @@ void ATopRaceHUD::DrawDebugRaceInfo()
 
     float Y = 50.f;
     const float LineH = 22.f;
-    const FLinearColor White(1,1,1,1);
-    const FLinearColor Yellow(1,1,0,1);
+    const FLinearColor White(1, 1, 1, 1);
+    const FLinearColor Yellow(1, 1, 0, 1);
 
     DrawText(TEXT("=== TOP RACE DEBUG ==="), Yellow, 20.f, Y); Y += LineH;
 
